@@ -1,5 +1,7 @@
 const User = require("../models/User");
 const passport = require("passport");
+const overwatch = require("overwatch-api");
+const async = require("async");
 const { validationResult } = require("express-validator");
 
 module.exports = {
@@ -10,41 +12,76 @@ module.exports = {
     }).catch((err) => next(err));
   },
 
-  register: async (req, res, next) => {
-    const errors = validationResult(req);
+  register: (req, res, next) => {
     const { name, email, password, overWatchId } = req.body;
-
-    if (!errors.isEmpty()) return res.send({ errors: errors.array() });
-
-    let user = await User.findOne({ email });
-
-    try {
-      if (user) {
-        return res.send({ message: "User already exists" });
-      } else {
-        user = await User.create({
-          name,
-          overWatchId,
-          email,
-          password,
+    async.waterfall([
+      (callback) => {
+        User.findOne({ email }, (err, user) => {
+          if (err) return next(err);
+          if (user) return res.json({ message: "User already exists" });
         });
 
-        user
-          .save()
-          .then((user) => {
-            req.login(user, (err) => {
-              if (err) {
-                return res.send({ err });
-              } else {
-                return res.send({ user });
-              }
+        const user = new User();
+        user.name = name;
+        user.email = email;
+        user.password = password;
+        user.overWatchId = overWatchId;
+
+        user.save((err) => {
+          if (err) return next(err);
+        });
+        callback(null, user);
+      },
+      (user, callback) => {
+        overwatch.getProfile(
+          "pc",
+          "us",
+          user.overWatchId,
+          (
+            err,
+            {
+              username: userName,
+              portrait,
+              level,
+              games: {
+                competitive: { won, lost, draw, played },
+              },
+              competitive: {
+                tank: { rank: tRank, rank_img: tRank_img },
+                damage: { rank: dRank, rank_img: dRank_img },
+                support: { rank: sRank, rank_img: sRank_img },
+              },
+            }
+          ) => {
+            if (err) return console.error(err);
+            if (!userName) return next();
+
+            User.findOne({ email: user.email }, (err, user) => {
+              if (err) return next(err);
+
+              user.OWStats.userName = userName;
+              user.OWStats.portrait = portrait;
+              user.OWStats.level = level;
+              user.OWStats.competitiveGames.won = won;
+              user.OWStats.competitiveGames.lost = lost;
+              user.OWStats.competitiveGames.draw = draw;
+              user.OWStats.competitiveGames.played = played;
+              user.OWStats.competitiveStats.tank.rank = tRank;
+              user.OWStats.competitiveStats.tank.rank_img = tRank_img;
+              user.OWStats.competitiveStats.damage.rank = dRank;
+              user.OWStats.competitiveStats.damage.rank_img = dRank_img;
+              user.OWStats.competitiveStats.support.rank = sRank;
+              user.OWStats.competitiveStats.support.rank_img = sRank_img;
+
+              user.save((err) => {
+                if (err) return next(err);
+              });
             });
-          })
-          .catch((err) => next(err));
-      }
-    } catch (error) {
-      return next(error);
-    }
+          }
+        );
+      },
+    ]);
+    return res.send({ message: "User was successfully created" });
   },
 
   login: passport.authenticate("local-login", {
