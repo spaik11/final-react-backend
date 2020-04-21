@@ -5,32 +5,7 @@ const UserSchema = new mongoose.Schema({
   email: { type: String, unique: true, lowercase: true, required: true },
   password: { type: String, required: true },
   name: { type: String, default: "" },
-  overWatchId: { type: String, default: "" },
-  OWStats: {
-    userName: String,
-    portrait: String,
-    level: Number,
-    competitiveGames: {
-      won: Number,
-      lost: Number,
-      draw: Number,
-      played: Number,
-    },
-    competitiveStats: {
-      tank: {
-        rank: Number,
-        rank_img: String,
-      },
-      damage: {
-        rank: Number,
-        rank_img: String,
-      },
-      support: {
-        rank: Number,
-        rank_img: String,
-      },
-    },
-  },
+  owId: { type: String, default: "" },
 });
 
 UserSchema.pre("save", function (next) {
