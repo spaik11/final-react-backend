@@ -23,7 +23,7 @@ module.exports = {
 
     try {
       if (user) {
-        return res.send({});
+        return res.send({ error: "User already exists", user });
       } else {
         user = await User.create({
           name,
@@ -35,7 +35,7 @@ module.exports = {
         user
           .save()
           .then((user) => {
-            return res.send({ user });
+            return res.send({ message: "User was successfully saved", user });
           })
           .catch((err) => next(err));
       }
