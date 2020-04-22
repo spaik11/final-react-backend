@@ -1,8 +1,8 @@
 const User = require("../models/User");
-const passport = require("passport");
-const overwatch = require("overwatch-api");
-const async = require("async");
+const jwt = require("jsonwebtoken");
+const bcrypt = require("bcryptjs");
 const { validationResult } = require("express-validator");
+const keys = require("../../../config/keys");
 
 module.exports = {
   getAllUsers: (req, res, next) => {
@@ -44,11 +44,42 @@ module.exports = {
     }
   },
 
-  login: passport.authenticate("local-login", {
-    successRedirect: "/home",
-    failureRedirect: "/login",
-    failureFlash: true,
-  }),
+  login: (req, res, next) => {
+    const { email, password } = req.body;
+
+    User.findOne({ email }).then((user) => {
+      if (!user) {
+        return res.status(404).json({ emailNotFound: "Email not found" });
+      }
+
+      bcrypt.compare(password, user.password).then((isMatch) => {
+        if (isMatch) {
+          const payload = {
+            id: user.id,
+            name: user.name,
+          };
+
+          jwt.sign(
+            payload,
+            keys.secretOrKey,
+            {
+              expiresIn: 31556926,
+            },
+            (err, token) => {
+              res.json({
+                success: true,
+                token: "Bearer " + token,
+              });
+            }
+          );
+        } else {
+          return res
+            .status(400)
+            .json({ passwordIncorrect: "Password incorrect" });
+        }
+      });
+    });
+  },
 
   logout: (req, res) => {
     req.logout();
