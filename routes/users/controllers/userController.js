@@ -14,16 +14,16 @@ module.exports = {
 
   register: async (req, res, next) => {
     const errors = validationResult(req);
-    const { name, email, password, admin } = req.body;
+    const { name, email, password, owId } = req.body;
 
     if (!errors.isEmpty())
-      return res.render("auth/register", { errors: errors.array() });
+      return res.send({ message: "Please check your inputs" });
 
     let user = await User.findOne({ email });
 
     try {
       if (user) {
-        return res.render("auth/register");
+        return res.send({});
       } else {
         user = await User.create({
           name,
@@ -35,16 +35,7 @@ module.exports = {
         user
           .save()
           .then((user) => {
-            req.login(user, (err) => {
-              if (err) {
-                return next(err);
-              } else {
-                return res.send({
-                  message: "User was successfully created",
-                  user,
-                });
-              }
-            });
+            return res.send({ user });
           })
           .catch((err) => next(err));
       }
