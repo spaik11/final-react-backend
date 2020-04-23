@@ -49,7 +49,7 @@ module.exports = {
 
     User.findOne({ email }).then((user) => {
       if (!user) {
-        return res.status(404).json({ emailNotFound: "Email not found" });
+        return res.send({ emailNotFound: "Email not found" });
       }
 
       bcrypt.compare(password, user.password).then((isMatch) => {
@@ -69,13 +69,12 @@ module.exports = {
               res.json({
                 success: true,
                 token: "Bearer " + token,
+                user: user.name,
               });
             }
           );
         } else {
-          return res
-            .status(400)
-            .json({ passwordIncorrect: "Password incorrect" });
+          return res.send({ passwordIncorrect: "Password incorrect" });
         }
       });
     });
