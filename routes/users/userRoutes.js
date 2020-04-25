@@ -7,7 +7,6 @@ require("../../lib/passport");
 
 const {
   getAllUsers,
-
   register,
   login,
   logout,
