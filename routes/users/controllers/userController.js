@@ -14,6 +14,14 @@ module.exports = {
     }
   },
 
+  profile: async (req, res, next) => {
+    try {
+      return res.json({ user: req.user });
+    } catch (error) {
+      return console.log(error);
+    }
+  },
+
   register: async (req, res, next) => {
     const errors = validationResult(req);
     const { name, email, password, owId } = req.body;
@@ -35,7 +43,7 @@ module.exports = {
         });
 
         user.save().then((user) => {
-          jwt.sign({ user }, PROCESS.env.ACCESS_TOKEN_SECRET, (err, token) => {
+          jwt.sign({ user }, process.env.ACCESS_TOKEN_SECRET, (err, token) => {
             res.json({ success: true, token: "Bearer " + token, user });
           });
         });
@@ -62,8 +70,9 @@ module.exports = {
           const payload = {
             id: user.id,
             name: user.name,
+            email: user.email,
           };
-          jwt.sign(payload, PROCESS.env.ACCESS_TOKEN_SECRET, (err, token) => {
+          jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, (err, token) => {
             res.json({
               success: true,
               token: "Bearer " + token,
