@@ -2,7 +2,7 @@ const User = require("../models/User");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const { validationResult } = require("express-validator");
-const keys = require("../../../config/keys");
+require("dotenv").config();
 
 module.exports = {
   getAllUsers: async (req, res, next) => {
@@ -35,16 +35,9 @@ module.exports = {
         });
 
         user.save().then((user) => {
-          jwt.sign(
-            { user },
-            keys.secretOrKey,
-            {
-              expiresIn: 31556926,
-            },
-            (err, token) => {
-              res.json({ success: true, token: "Bearer " + token, user });
-            }
-          );
+          jwt.sign({ user }, PROCESS.env.ACCESS_TOKEN_SECRET, (err, token) => {
+            res.json({ success: true, token: "Bearer " + token, user });
+          });
         });
       }
     } catch (error) {
@@ -70,20 +63,13 @@ module.exports = {
             id: user.id,
             name: user.name,
           };
-          jwt.sign(
-            payload,
-            keys.secretOrKey,
-            {
-              expiresIn: 31556926,
-            },
-            (err, token) => {
-              res.json({
-                success: true,
-                token: "Bearer " + token,
-                user,
-              });
-            }
-          );
+          jwt.sign(payload, PROCESS.env.ACCESS_TOKEN_SECRET, (err, token) => {
+            res.json({
+              success: true,
+              token: "Bearer " + token,
+              user,
+            });
+          });
         }
       }
     } catch (error) {
